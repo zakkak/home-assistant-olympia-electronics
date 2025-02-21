@@ -21,10 +21,9 @@ from homeassistant.components.climate import (
     ATTR_CURRENT_TEMPERATURE, ATTR_FAN_MODE, ATTR_HVAC_MODE,
     PLATFORM_SCHEMA, ClimateEntity)
 from homeassistant.components.climate.const import (
-    HVAC_MODE_AUTO, HVAC_MODE_HEAT, HVAC_MODE_OFF, CURRENT_HVAC_IDLE, SUPPORT_TARGET_TEMPERATURE,
-    CURRENT_HVAC_COOL, CURRENT_HVAC_HEAT, CURRENT_HVAC_OFF)
+    HVACMode, ClimateEntityFeature, HVACAction)
 from homeassistant.const import (
-    ATTR_TEMPERATURE, CONF_EMAIL, CONF_PASSWORD, CONF_TOKEN, TEMP_CELSIUS, PRECISION_HALVES,
+    ATTR_TEMPERATURE, CONF_EMAIL, CONF_PASSWORD, CONF_TOKEN, UnitOfTemperature, PRECISION_HALVES,
     PRECISION_TENTHS, PRECISION_WHOLE)
 import homeassistant.helpers.config_validation as cv
 
@@ -48,15 +47,15 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 HA_STATE_TO_OLYMPIA = {
-    HVAC_MODE_HEAT: 'on',
-    HVAC_MODE_OFF: 'off',
-    HVAC_MODE_AUTO: 'idle'
+    HVACMode.HEAT: 'on',
+    HVACMode.OFF: 'off',
+    HVACMode.AUTO: 'idle'
 }
 
 OLYMPIA_TO_HA_STATE = {
-    'on': HVAC_MODE_HEAT,
-    'off': HVAC_MODE_OFF,
-    'idle': HVAC_MODE_AUTO
+    'on': HVACMode.HEAT,
+    'off': HVACMode.OFF,
+    'idle': HVACMode.AUTO
 }
 
 
@@ -112,7 +111,7 @@ class OlympiaElectronicsThermostat(ClimateEntity):
     """Representation of a Olympia Electronics Thermostat."""
 
     def __init__(self, login_details, id, name, status, min_temp, max_temp, precision, auth_token):
-        self._support_flags = SUPPORT_TARGET_TEMPERATURE
+        self._support_flags = ClimateEntityFeature.TARGET_TEMPERATURE
         self._name = name
         self._login_details = login_details
         self._id = id
@@ -221,7 +220,7 @@ class OlympiaElectronicsThermostat(ClimateEntity):
     @property
     def temperature_unit(self):
         """_LOGGER.debug('Called temperature_unit')"""
-        return TEMP_CELSIUS
+        return UnitOfTemperature.CELSIUS
 
     @property
     def current_temperature(self):
@@ -241,11 +240,11 @@ class OlympiaElectronicsThermostat(ClimateEntity):
         _LOGGER.debug('requested hvac_mode: %s',self._is_on)
         if self._is_on:
             if self._burner_on:
-                return HVAC_MODE_HEAT
+                return HVACMode.HEAT
             else:
-                return HVAC_MODE_AUTO
+                return HVACMode.AUTO
         else:
-            return HVAC_MODE_OFF
+            return HVACMode.OFF
 
     def set_hvac_mode(self, operation_mode):
         _LOGGER.debug('Will set mode')
@@ -272,15 +271,15 @@ class OlympiaElectronicsThermostat(ClimateEntity):
     def hvac_modes(self):
         """Return the list of available operation modes."""
         """_LOGGER.debug('Called operation_list')"""
-        return [HVAC_MODE_HEAT, HVAC_MODE_OFF, HVAC_MODE_AUTO]
+        return [HVACMode.HEAT, HVACMode.OFF, HVACMode.AUTO]
 
     @property
     def hvac_mode(self):
         """Return hvac operation ie. heat, cool mode."""
         """_LOGGER.debug('Called is_on')"""
         if self._is_on:
-            return HVAC_MODE_HEAT
-        return HVAC_MODE_OFF
+            return HVACMode.HEAT
+        return HVACMode.OFF
 
 #    @property
 #    def current_operation(self):
@@ -291,15 +290,15 @@ class OlympiaElectronicsThermostat(ClimateEntity):
     @property
     def hvac_action(self):
         """Return the current running hvac operation if supported.
-        Need to be one of CURRENT_HVAC_*.
+        Need to be one of HVACAction.*.
         """
         if self._is_on:
             if self._burner_on:
-                return CURRENT_HVAC_HEAT
+                return HVACAction.HEATING
             else:
-                return CURRENT_HVAC_IDLE
+                return HVACAction.IDLE
         else:
-            return CURRENT_HVAC_OFF
+            return HVACAction.OFF
 
     def sendUpdateToApi(self):
         if not self.isValidToken:
@@ -342,9 +341,9 @@ class OlympiaElectronicsThermostat(ClimateEntity):
 
     def set_hvac_mode(self, hvac_mode):
         """Turn on."""
-        if hvac_mode == HVAC_MODE_HEAT:
+        if hvac_mode == HVACMode.HEAT:
             self._is_on = True
-        elif hvac_mode == HVAC_MODE_OFF:
+        elif hvac_mode == HVACMode.OFF:
             self._is_on = False
         else:
             _LOGGER.error("Unrecognized hvac mode: %s", hvac_mode)
